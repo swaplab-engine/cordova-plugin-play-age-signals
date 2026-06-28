@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover">
+    <title>Age Signals Tester</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #212529;
+            margin: 0;
+        }
+        h1 {
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button {
+            padding: 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            background-color: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .status-card {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+            font-weight: bold;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .data-table th, .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .data-table th {
+            background-color: #f1f3f5;
+            width: 45%;
+        }
+        .value-null {
+            color: #dc3545;
+            font-style: italic;
+        }
+        .value-valid {
+            color: #198754;
+            font-weight: bold;
+        }
+        pre {
+            background-color: #212529;
+            color: #20c997;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Play Age Signals</h1>
+
+    <div class="status-card" id="statusLabel">Status: Waiting for device...</div>
+
+    <button id="btnCheckSignals" disabled>Request Age Signals API</button>
+
+    <h3>Parsed Data:</h3>
+    <table class="data-table">
+        <tbody>
+        <tr>
+            <th>User Status</th>
+            <td id="valUserStatus">-</td>
+        </tr>
+        <tr>
+            <th>Age Lower Bound</th>
+            <td id="valAgeLower">-</td>
+        </tr>
+        <tr>
+            <th>Age Upper Bound</th>
+            <td id="valAgeUpper">-</td>
+        </tr>
+        <tr>
+            <th>Install ID</th>
+            <td id="valInstallId">-</td>
+        </tr>
+        <tr>
+            <th>Approval Date</th>
+            <td id="valApprovalDate">-</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <h3>Raw JSON Payload:</h3>
+    <pre id="outputConsole">No data yet.</pre>
+</div>
+
+<script src="cordova.js"></script>
+<script>
+    document.addEventListener('deviceready', onDeviceReady, false);
+
+    function formatValue(val) {
+        if (val === null || val === undefined) {
+            return '<span class="value-null">null</span>';
+        }
+        return '<span class="value-valid">' + val + '</span>';
+    }
+
+    function onDeviceReady() {
+        var statusLabel = document.getElementById('statusLabel');
+        var btnCheckSignals = document.getElementById('btnCheckSignals');
+        var outputConsole = document.getElementById('outputConsole');
+
+        // Table cells
+        var valUserStatus = document.getElementById('valUserStatus');
+        var valAgeLower = document.getElementById('valAgeLower');
+        var valAgeUpper = document.getElementById('valAgeUpper');
+        var valInstallId = document.getElementById('valInstallId');
+        var valApprovalDate = document.getElementById('valApprovalDate');
+
+        statusLabel.innerText = "Status: Device Ready";
+        statusLabel.style.color = "#198754";
+        btnCheckSignals.disabled = false;
+
+        btnCheckSignals.addEventListener('click', function() {
+            statusLabel.innerText = "Status: Requesting API...";
+            statusLabel.style.color = "#0d6efd";
+            outputConsole.innerText = "Processing request...";
+            btnCheckSignals.disabled = true;
+
+            if (window.cordova && window.cordova.plugins && window.cordova.plugins.PlayAgeSignals) {
+
+                window.cordova.plugins.PlayAgeSignals.checkAgeSignals(
+                    function(result) {
+                        statusLabel.innerText = "Status: API Request Successful";
+                        statusLabel.style.color = "#198754";
+
+                        // Populate table
+                        valUserStatus.innerHTML = formatValue(result.userStatus);
+                        valAgeLower.innerHTML = formatValue(result.ageLower);
+                        valAgeUpper.innerHTML = formatValue(result.ageUpper);
+                        valInstallId.innerHTML = formatValue(result.installId);
+                        valApprovalDate.innerHTML = formatValue(result.mostRecentApprovalDate);
+
+                        // Output raw JSON
+                        outputConsole.innerText = JSON.stringify(result, null, 4);
+                        btnCheckSignals.disabled = false;
+                    },
+                    function(error) {
+                        statusLabel.innerText = "Status: API Request Failed";
+                        statusLabel.style.color = "#dc3545";
+                        outputConsole.innerText = "Error Payload:\n" + error;
+                        btnCheckSignals.disabled = false;
+                    }
+                );
+            } else {
+                statusLabel.innerText = "Status: Plugin Not Found";
+                statusLabel.style.color = "#dc3545";
+                outputConsole.innerText = "Error: cordova-plugin-play-age-signals is not loaded.";
+                btnCheckSignals.disabled = false;
+            }
+        });
+    }
+</script>
+</body>
+</html>

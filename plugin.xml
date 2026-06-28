@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        id="cordova-plugin-play-age-signals"
+        version="1.0.0">
+    <name>Play Age Signals</name>
+    <description>Cordova plugin to interface with the Google Play Age Signals API</description>
+    <author>EMI INDO</author>
+    <license>MIT</license>
+    <keywords>cordova,age,google,signals</keywords>
+
+    <!-- JavaScript Interface -->
+    <js-module src="www/PlayAgeSignals.js" name="PlayAgeSignals">
+        <clobbers target="cordova.plugins.PlayAgeSignals" />
+    </js-module>
+
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="PlayAgeSignalsPlugin">
+                <param name="android-package" value="cordova.plugin.playagesignals.PlayAgeSignalsPlugin" />
+            </feature>
+        </config-file>
+
+        <source-file src="src/android/PlayAgeSignalsPlugin.java" target-dir="src/cordova/plugin/playagesignals" />
+        <preference name="AGE_SIGNALS_VERSION" default="0.0.3" />
+        <framework src="com.google.android.play:age-signals:$AGE_SIGNALS_VERSION" />
+    </platform>
+</plugin>
