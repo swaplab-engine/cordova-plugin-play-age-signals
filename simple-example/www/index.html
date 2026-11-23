@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover">
-    <title>Age Signals Tester</title>
+    <title>Play Age Signals Tester (v0.0.6)</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -17,6 +17,10 @@
             text-align: center;
             margin-bottom: 20px;
         }
+        h3 {
+            margin: 10px 0 5px 0;
+            font-size: 1rem;
+        }
         .container {
             display: flex;
             flex-direction: column;
@@ -24,21 +28,11 @@
             max-width: 600px;
             margin: 0 auto;
         }
-        button {
+        .card {
+            background: white;
             padding: 15px;
-            font-size: 1rem;
-            font-weight: bold;
-            background-color: #0d6efd;
-            color: white;
-            border: none;
             border-radius: 6px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        button:disabled {
-            background-color: #6c757d;
-            cursor: not-allowed;
-            box-shadow: none;
+            border: 1px solid #dee2e6;
         }
         .status-card {
             background: white;
@@ -48,13 +42,67 @@
             text-align: center;
             font-weight: bold;
         }
+        .mode-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .mode-controls label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #495057;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            font-size: 0.95rem;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            background-color: #fff;
+        }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+        button {
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: bold;
+            background-color: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button.btn-secondary {
+            flex: 1;
+            padding: 10px 8px;
+            font-size: 0.8rem;
+            background-color: #495057;
+        }
+        button.btn-warning {
+            padding: 10px;
+            font-size: 0.9rem;
+            background-color: #fd7e14;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
         .data-table {
             width: 100%;
             border-collapse: collapse;
             background: white;
             border-radius: 6px;
             overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .data-table th, .data-table td {
             padding: 12px;
@@ -63,7 +111,7 @@
         }
         .data-table th {
             background-color: #f1f3f5;
-            width: 45%;
+            width: 48%;
         }
         .value-null {
             color: #dc3545;
@@ -79,25 +127,56 @@
             padding: 15px;
             border-radius: 6px;
             overflow-x: auto;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            margin: 0;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Play Age Signals</h1>
+    <h1>Play Age Signals (v0.0.6)</h1>
 
     <div class="status-card" id="statusLabel">Status: Waiting for device...</div>
 
-    <button id="btnCheckSignals" disabled>Request Age Signals API</button>
+    <div class="card mode-controls">
+        <label for="testPreset">Environment / FakeAgeSignalsManager Preset:</label>
+        <select id="testPreset" disabled>
+            <option value="production">Production (Live Google Play)</option>
+            <option value="verified_adult">Test: Verified Adult (18+, TIER_D, Mandatory)</option>
+            <option value="supervised_minor">Test: Supervised Minor (13-15, TIER_B)</option>
+            <option value="pending_change">Test: Supervised Minor (Pending Significant Change)</option>
+            <option value="approved_change">Test: Supervised Minor (Approved Significant Change)</option>
+            <option value="not_shared">Test: Access NOT_SHARED</option>
+            <option value="verification_required">Test: Access VERIFICATION_REQUIRED</option>
+            <option value="network_error">Test: Simulate NETWORK_ERROR (-3)</option>
+        </select>
+        <button id="btnApplyMode" class="btn-warning" disabled>Apply Mode</button>
+    </div>
+
+    <div class="btn-group">
+        <button id="btnFullFlow" disabled>Run Full Flow (Recommended)</button>
+        <div class="btn-row">
+            <button id="btnFeatures" class="btn-secondary" disabled>1. Features</button>
+            <button id="btnAccess" class="btn-secondary" disabled>2. Request Access</button>
+            <button id="btnCheckSignals" class="btn-secondary" disabled>3. Check Signals</button>
+        </div>
+    </div>
 
     <h3>Parsed Data:</h3>
     <table class="data-table">
         <tbody>
         <tr>
-            <th>User Status</th>
-            <td id="valUserStatus">-</td>
+            <th>Applicable Features</th>
+            <td id="valFeatures">-</td>
+        </tr>
+        <tr>
+            <th>Access Status</th>
+            <td id="valAccessStatus">-</td>
+        </tr>
+        <tr>
+            <th>Age Range Source</th>
+            <td id="valAgeRangeSource">-</td>
         </tr>
         <tr>
             <th>Age Lower Bound</th>
@@ -112,8 +191,12 @@
             <td id="valInstallId">-</td>
         </tr>
         <tr>
-            <th>Approval Date</th>
-            <td id="valApprovalDate">-</td>
+            <th>Significant Change Status</th>
+            <td id="valSigChangeStatus">-</td>
+        </tr>
+        <tr>
+            <th>Significant Change Date</th>
+            <td id="valSigChangeDate">-</td>
         </tr>
         </tbody>
     </table>
@@ -126,66 +209,253 @@
 <script>
     document.addEventListener('deviceready', onDeviceReady, false);
 
+    var TEST_PRESETS = {
+        verified_adult: {
+            mandatorySharing: true,
+            ageSignalsStatus: 'SHARED',
+            ageRangeSource: 'TIER_D',
+            ageLower: 18
+        },
+        supervised_minor: {
+            mandatorySharing: true,
+            ageSignalsStatus: 'SHARED',
+            ageRangeSource: 'TIER_B',
+            ageLower: 13,
+            ageUpper: 15,
+            installId: 'fake_install_id_123'
+        },
+        pending_change: {
+            mandatorySharing: true,
+            ageSignalsStatus: 'SHARED',
+            ageRangeSource: 'TIER_B',
+            ageLower: 13,
+            ageUpper: 15,
+            significantChangeStatus: 'PENDING',
+            installId: 'fake_install_id_123'
+        },
+        approved_change: {
+            mandatorySharing: true,
+            ageSignalsStatus: 'SHARED',
+            ageRangeSource: 'TIER_B',
+            ageLower: 13,
+            ageUpper: 15,
+            significantChangeStatus: 'APPROVED',
+            significantChangeApprovalDate: 1777939200000, // 2026-05-01 UTC
+            installId: 'fake_install_id_123'
+        },
+        not_shared: {
+            mandatorySharing: false,
+            ageSignalsStatus: 'NOT_SHARED'
+        },
+        verification_required: {
+            mandatorySharing: true,
+            ageSignalsStatus: 'VERIFICATION_REQUIRED'
+        },
+        network_error: {
+            errorCode: -3
+        }
+    };
+
     function formatValue(val) {
-        if (val === null || val === undefined) {
+        if (val === null || val === undefined || val === '') {
             return '<span class="value-null">null</span>';
         }
         return '<span class="value-valid">' + val + '</span>';
     }
 
+    function formatError(error) {
+        if (typeof error === 'object' && error !== null) {
+            return JSON.stringify(error, null, 4);
+        }
+        return String(error);
+    }
+
     function onDeviceReady() {
+        var PlayAgeSignals = cordova.plugins.PlayAgeSignals;
+
         var statusLabel = document.getElementById('statusLabel');
+        var testPreset = document.getElementById('testPreset');
+        var btnApplyMode = document.getElementById('btnApplyMode');
+        var btnFullFlow = document.getElementById('btnFullFlow');
+        var btnFeatures = document.getElementById('btnFeatures');
+        var btnAccess = document.getElementById('btnAccess');
         var btnCheckSignals = document.getElementById('btnCheckSignals');
+        var allControls = [testPreset, btnApplyMode, btnFullFlow, btnFeatures, btnAccess, btnCheckSignals];
         var outputConsole = document.getElementById('outputConsole');
 
         // Table cells
-        var valUserStatus = document.getElementById('valUserStatus');
+        var valFeatures = document.getElementById('valFeatures');
+        var valAccessStatus = document.getElementById('valAccessStatus');
+        var valAgeRangeSource = document.getElementById('valAgeRangeSource');
         var valAgeLower = document.getElementById('valAgeLower');
         var valAgeUpper = document.getElementById('valAgeUpper');
         var valInstallId = document.getElementById('valInstallId');
-        var valApprovalDate = document.getElementById('valApprovalDate');
+        var valSigChangeStatus = document.getElementById('valSigChangeStatus');
+        var valSigChangeDate = document.getElementById('valSigChangeDate');
 
-        statusLabel.innerText = "Status: Device Ready";
-        statusLabel.style.color = "#198754";
-        btnCheckSignals.disabled = false;
+        function setControlsDisabled(disabled) {
+            allControls.forEach(function(el) { el.disabled = disabled; });
+        }
 
-        btnCheckSignals.addEventListener('click', function() {
-            statusLabel.innerText = "Status: Requesting API...";
-            statusLabel.style.color = "#0d6efd";
-            outputConsole.innerText = "Processing request...";
-            btnCheckSignals.disabled = true;
+        function setStatus(text, color) {
+            statusLabel.innerText = text;
+            statusLabel.style.color = color;
+        }
 
-            if (window.cordova && window.cordova.plugins && window.cordova.plugins.PlayAgeSignals) {
+        function resetTable() {
+            valFeatures.innerText = '-';
+            valAccessStatus.innerText = '-';
+            valAgeRangeSource.innerText = '-';
+            valAgeLower.innerText = '-';
+            valAgeUpper.innerText = '-';
+            valInstallId.innerText = '-';
+            valSigChangeStatus.innerText = '-';
+            valSigChangeDate.innerText = '-';
+        }
 
-                window.cordova.plugins.PlayAgeSignals.checkAgeSignals(
-                    function(result) {
-                        statusLabel.innerText = "Status: API Request Successful";
-                        statusLabel.style.color = "#198754";
+        function populateSignalsTable(result) {
+            valAgeRangeSource.innerHTML = formatValue(result.ageRangeSource);
+            valAgeLower.innerHTML = formatValue(result.ageLower);
+            valAgeUpper.innerHTML = formatValue(result.ageUpper);
+            valInstallId.innerHTML = formatValue(result.installId);
+            valSigChangeStatus.innerHTML = formatValue(result.significantChangeStatus);
+            valSigChangeDate.innerHTML = formatValue(result.significantChangeApprovalDate);
+        }
 
-                        // Populate table
-                        valUserStatus.innerHTML = formatValue(result.userStatus);
-                        valAgeLower.innerHTML = formatValue(result.ageLower);
-                        valAgeUpper.innerHTML = formatValue(result.ageUpper);
-                        valInstallId.innerHTML = formatValue(result.installId);
-                        valApprovalDate.innerHTML = formatValue(result.mostRecentApprovalDate);
+        function handleError(step, error) {
+            setStatus("Status: " + step + " Failed", "#dc3545");
+            outputConsole.innerText = "Error (" + step + "):\n" + formatError(error);
+            setControlsDisabled(false);
+        }
 
-                        // Output raw JSON
-                        outputConsole.innerText = JSON.stringify(result, null, 4);
-                        btnCheckSignals.disabled = false;
+        setStatus("Status: Device Ready (Production Mode)", "#198754");
+        setControlsDisabled(false);
+
+        // Apply Production or Test Mode preset
+        btnApplyMode.addEventListener('click', function() {
+            var selected = testPreset.value;
+            resetTable();
+            setControlsDisabled(true);
+
+            if (selected === 'production') {
+                PlayAgeSignals.disableTestMode(
+                    function(res) {
+                        setStatus("Status: Production Mode Active", "#198754");
+                        outputConsole.innerText = "Mode switched: " + res;
+                        setControlsDisabled(false);
                     },
-                    function(error) {
-                        statusLabel.innerText = "Status: API Request Failed";
-                        statusLabel.style.color = "#dc3545";
-                        outputConsole.innerText = "Error Payload:\n" + error;
-                        btnCheckSignals.disabled = false;
-                    }
+                    function(err) { handleError("disableTestMode", err); }
                 );
             } else {
-                statusLabel.innerText = "Status: Plugin Not Found";
-                statusLabel.style.color = "#dc3545";
-                outputConsole.innerText = "Error: cordova-plugin-play-age-signals is not loaded.";
-                btnCheckSignals.disabled = false;
+                var options = TEST_PRESETS[selected];
+                PlayAgeSignals.enableTestMode(
+                    options,
+                    function(res) {
+                        setStatus("Status: Test Mode Active (" + selected + ")", "#fd7e14");
+                        outputConsole.innerText = "Test Mode Enabled:\n" + JSON.stringify(options, null, 4);
+                        setControlsDisabled(false);
+                    },
+                    function(err) { handleError("enableTestMode", err); }
+                );
             }
+        });
+
+        // Full Flow: 1. getApplicableAgeFeatures -> 2. requestAgeSignalsAccess -> 3. checkAgeSignals
+        btnFullFlow.addEventListener('click', function() {
+            var combinedPayload = {};
+            setStatus("Status: Step 1/3 Checking features...", "#0d6efd");
+            outputConsole.innerText = "Processing full flow...";
+            setControlsDisabled(true);
+
+            PlayAgeSignals.getApplicableAgeFeatures(
+                function(featuresResult) {
+                    combinedPayload.applicableAgeFeatures = featuresResult;
+                    var featText = (featuresResult.features && featuresResult.features.length > 0)
+                        ? featuresResult.features.join(', ')
+                        : '[] (None)';
+                    valFeatures.innerHTML = formatValue(featText);
+
+                    setStatus("Status: Step 2/3 Requesting access...", "#0d6efd");
+                    PlayAgeSignals.requestAgeSignalsAccess(
+                        function(accessResult) {
+                            combinedPayload.accessResult = accessResult;
+                            valAccessStatus.innerHTML = formatValue(accessResult.ageSignalsStatus);
+
+                            if (accessResult.ageSignalsStatus === 'SHARED') {
+                                setStatus("Status: Step 3/3 Checking age signals...", "#0d6efd");
+                                PlayAgeSignals.checkAgeSignals(
+                                    function(signalsResult) {
+                                        combinedPayload.ageSignalsResult = signalsResult;
+                                        populateSignalsTable(signalsResult);
+                                        setStatus("Status: Full Flow Successful (SHARED)", "#198754");
+                                        outputConsole.innerText = JSON.stringify(combinedPayload, null, 4);
+                                        setControlsDisabled(false);
+                                    },
+                                    function(err) { handleError("checkAgeSignals", err); }
+                                );
+                            } else {
+                                populateSignalsTable({});
+                                setStatus("Status: Access = " + accessResult.ageSignalsStatus, "#fd7e14");
+                                outputConsole.innerText = JSON.stringify(combinedPayload, null, 4);
+                                setControlsDisabled(false);
+                            }
+                        },
+                        function(err) { handleError("requestAgeSignalsAccess", err); }
+                    );
+                },
+                function(err) { handleError("getApplicableAgeFeatures", err); }
+            );
+        });
+
+        // Step 1 only
+        btnFeatures.addEventListener('click', function() {
+            setStatus("Status: Checking applicable features...", "#0d6efd");
+            setControlsDisabled(true);
+
+            PlayAgeSignals.getApplicableAgeFeatures(
+                function(result) {
+                    var featText = (result.features && result.features.length > 0)
+                        ? result.features.join(', ')
+                        : '[] (None)';
+                    valFeatures.innerHTML = formatValue(featText);
+                    setStatus("Status: Features Retrieved", "#198754");
+                    outputConsole.innerText = JSON.stringify(result, null, 4);
+                    setControlsDisabled(false);
+                },
+                function(err) { handleError("getApplicableAgeFeatures", err); }
+            );
+        });
+
+        // Step 2 only
+        btnAccess.addEventListener('click', function() {
+            setStatus("Status: Requesting access...", "#0d6efd");
+            setControlsDisabled(true);
+
+            PlayAgeSignals.requestAgeSignalsAccess(
+                function(result) {
+                    valAccessStatus.innerHTML = formatValue(result.ageSignalsStatus);
+                    setStatus("Status: Access = " + result.ageSignalsStatus, "#198754");
+                    outputConsole.innerText = JSON.stringify(result, null, 4);
+                    setControlsDisabled(false);
+                },
+                function(err) { handleError("requestAgeSignalsAccess", err); }
+            );
+        });
+
+        // Step 3 only
+        btnCheckSignals.addEventListener('click', function() {
+            setStatus("Status: Checking age signals...", "#0d6efd");
+            setControlsDisabled(true);
+
+            PlayAgeSignals.checkAgeSignals(
+                function(result) {
+                    populateSignalsTable(result);
+                    setStatus("Status: Age Signals Retrieved", "#198754");
+                    outputConsole.innerText = JSON.stringify(result, null, 4);
+                    setControlsDisabled(false);
+                },
+                function(err) { handleError("checkAgeSignals", err); }
+            );
         });
     }
 </script>
