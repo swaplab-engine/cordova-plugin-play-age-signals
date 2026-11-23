@@ -10,6 +10,6 @@
     <content src="index.html" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
-    <engine name="android" spec="15.0.0" />
+    <engine name="android" spec="15.1.0" />
     <plugin name="cordova-plugin-play-age-signals" spec="https://github.com/swaplab-engine/cordova-plugin-play-age-signals.git"></plugin>
 </widget>

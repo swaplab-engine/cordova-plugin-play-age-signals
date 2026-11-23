@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-play-age-signals",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Cordova plugin to interface with the Google Play Age Signals API",
   "cordova": {
     "id": "cordova-plugin-play-age-signals",
